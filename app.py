@@ -1,17 +1,20 @@
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
-import plotly.graph_objects as go  
+import plotly.graph_objects as go 
 import plotly.express as px
 import dash_ag_grid as dag  
+import dash_bootstrap_components as dbc  
+
 
 from data_processing import load_and_preprocess_data, create_visualizations
 
 
-app = dash.Dash(__name__)
+# Initialize the Dash app with Bootstrap theme
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
-# Load and preprocess data (make sure 'df' is accessible here)
+# Load and preprocess data 
 pledges_file = 'https://storage.googleapis.com/plotly-app-challenge/one-for-the-world-pledges.json'
 payments_file = 'https://storage.googleapis.com/plotly-app-challenge/one-for-the-world-payments.json'
 df = load_and_preprocess_data(pledges_file, payments_file)
@@ -19,66 +22,65 @@ df = load_and_preprocess_data(pledges_file, payments_file)
 # Create visualizations
 figures = create_visualizations(df)
 
-app.layout = html.Div([
-    html.H1("One For The World Pledges and Payments Dashboard"),
 
-    # Filters (Example: Year Filter)
-    html.Div([
-        html.Label("Select Year:"),
-        dcc.Dropdown(
-            id='year-dropdown',
-            options=[{'label': str(year), 'value': year} for year in sorted(df['year'].unique())],
-            multi=True,  # Allow multiple selections
-            value=sorted(df['year'].unique()) # Default selection: all years
-        ),
-    ], style={'width': '48%', 'display': 'inline-block'}), # Style to put dropdown inline
-
-    # First Row of Graphs
-    html.Div([
-        dcc.Graph(id='pledge-trend-graph', figure=figures['pledge_trend']),
-    ], style={'width': '48%', 'display': 'inline-block'}),
-    html.Div([
-        dcc.Graph(id='pledge-distribution-graph', figure=figures['pledge_distribution']),
-    ], style={'width': '48%', 'display': 'inline-block'}),
-
-    # Second Row of Graphs
-    html.Div([
-        dcc.Graph(id='fulfillment-rate-graph', figure=figures['fulfillment_rate']),
-    ], style={'width': '48%', 'display': 'inline-block'}),
-    html.Div([
-        dcc.Graph(id='pledge-payment-scatter-graph', figure=figures['pledge_payment_scatter']),
-    ], style={'width': '48%', 'display': 'inline-block'}),
-
-    # By Year Plot
-    html.Div([
-        dcc.Graph(id='pledges-by-year-graph', figure=figures['by_year']),
-    ], style={'width': '48%', 'display': 'inline-block'}),
-
-    # Combined Metrics Plot
-    html.Div([
-        dcc.Graph(id='combined-metrics-graph', figure=figures['subplots']),
-    ], style={'width': '96%', 'display': 'inline-block'}),
-
-    # Table (Example - Pledge Summary)
-    html.Div([
-        html.H2("Pledge Summary Table"),
-        dag.AgGrid(  # Replace dash_table with dash_ag_grid
-            id='pledge-summary-grid',
-            columnDefs=[{"headerName": i, "field": i} for i in ['year', 'total_contribution_amount', 'average_contribution_amount']],
-            rowData=[],
-            columnSize="sizeToFit",  # Adjust column size
-        ),
+app.layout = dbc.Container([
+    dbc.Row([
+        dbc.Col(html.H1("One For The World Pledges and Payments Dashboard", className="text-center mb-4"), width=12),
     ]),
 
-    # LLM Interface (Placeholder)
-    html.Div([
-        html.H2("Ask a Question About the Data (LLM Placeholder)"),
-        dcc.Input(id='llm-input', type='text', placeholder='Enter your question'),
-        html.Button('Submit', id='llm-button', n_clicks=0),
-        html.Div(id='llm-output')
-    ])
-])
+    dbc.Row([
+        dbc.Col([
+            html.Label("Select Year:"),
+            dcc.Dropdown(
+                id='year-dropdown',
+                options=[{'label': str(year), 'value': year} for year in sorted(df['year'].unique())],
+                multi=True,  # Allow multiple selections
+                value=sorted(df['year'].unique()),
+                className="mb-3"  # Add margin bottom for spacing
+            ),
+        ], md=6, lg=4),  # Adjust column size for responsiveness
+    ]),
 
+    dbc.Row([
+        dbc.Col(dcc.Graph(id='pledge-trend-graph', figure=figures['pledge_trend']), md=12, lg=6),
+        dbc.Col(dcc.Graph(id='pledge-distribution-graph', figure=figures['pledge_distribution']), md=12, lg=6),
+    ]),
+
+    dbc.Row([
+        dbc.Col(dcc.Graph(id='fulfillment-rate-graph', figure=figures['fulfillment_rate']), md=12, lg=6),
+        dbc.Col(dcc.Graph(id='pledge-payment-scatter-graph', figure=figures['pledge_payment_scatter']), md=12, lg=6),
+    ]),
+
+    dbc.Row([
+        dbc.Col(dcc.Graph(id='pledges-by-year-graph', figure=figures['by_year']), width=12),
+    ]),
+
+    dbc.Row([
+        dbc.Col(dcc.Graph(id='combined-metrics-graph', figure=figures['subplots']), width=12),
+    ]),
+
+    dbc.Row([
+        dbc.Col([
+            html.H2("Pledge Summary Table", className="mt-4"),
+            dag.AgGrid(  # Replace dash_table with dash_ag_grid
+                id='pledge-summary-grid',
+                columnDefs=[{"headerName": i, "field": i} for i in ['year', 'total_contribution_amount', 'average_contribution_amount']],
+                rowData=[],
+                columnSize="sizeToFit",  # Adjust column size
+                className="ag-theme-alpine" #Add theme
+            ),
+        ], width=12),
+    ]),
+
+    dbc.Row([
+        dbc.Col([
+            html.H2("Ask a Question About the Data (LLM Placeholder)", className="mt-4"),
+            dcc.Input(id='llm-input', type='text', placeholder='Enter your question', className="mb-2"),
+            dbc.Button('Submit', id='llm-button', n_clicks=0, className="mr-2"),  # Added Bootstrap button
+            html.Div(id='llm-output')
+        ], width=12),
+    ]),
+], fluid=True)  # Use fluid=True for full width
 
 # --- Callbacks ---
 
@@ -106,14 +108,12 @@ def update_graphs(selected_years):
     pledge_summary.columns = ['year', 'total_contribution_amount', 'average_contribution_amount']
     table_data = pledge_summary.to_dict('records')
 
-
     return filtered_figures['pledge_trend'], \
            filtered_figures['pledge_distribution'], \
            filtered_figures['fulfillment_rate'], \
            filtered_figures['pledge_payment_scatter'], \
            filtered_figures['by_year'], \
            table_data  # Return the table data
-
 
 # LLM Callback (Placeholder - To be implemented with an actual LLM)
 @app.callback(
