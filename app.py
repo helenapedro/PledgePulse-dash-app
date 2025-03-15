@@ -1,17 +1,17 @@
+# app.py
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go  # Import here
 import plotly.express as px
 
-# Import the data processing functions
 from data_processing import load_and_preprocess_data, create_visualizations
 
 
 app = dash.Dash(__name__)
 server = app.server
 
-# Load and preprocess data 
+# Load and preprocess data (make sure 'df' is accessible here)
 pledges_file = 'https://storage.googleapis.com/plotly-app-challenge/one-for-the-world-pledges.json'
 payments_file = 'https://storage.googleapis.com/plotly-app-challenge/one-for-the-world-payments.json'
 df = load_and_preprocess_data(pledges_file, payments_file)
@@ -106,7 +106,7 @@ def update_graphs(selected_years):
     filtered_figures = create_visualizations(filtered_df)
 
     # Create pledge summary data for the table
-    pledge_summary = filtered_df.groupby('year')['pledge_amount'].agg(['sum', 'mean']).reset_index()
+    pledge_summary = filtered_df.groupby('year')['contribution_amount'].agg(['sum', 'mean']).reset_index() #Changed here
     pledge_summary.columns = ['year', 'total_pledge_amount', 'average_pledge_amount']
     table_data = pledge_summary.to_dict('records')
 
