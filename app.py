@@ -17,6 +17,9 @@ grid = dag.AgGrid(
 )
 
 app = Dash()
+
+server = app.server
+
 app.layout = [
     dcc.Markdown("# One For The World - Getting Started"),
     grid,
@@ -25,4 +28,4 @@ app.layout = [
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run_server(debug=True)
