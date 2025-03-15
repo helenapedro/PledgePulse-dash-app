@@ -13,9 +13,7 @@ def load_and_preprocess_data(pledges_path, payments_path):
         payments_df = pd.read_json(payments_path)
 
         print("Pledges DataFrame Columns:", pledges_df.columns)
-        print("First few rows of pledges_df:", pledges_df.head())
         print("Payments DataFrame Columns:", payments_df.columns)
-        print("First few rows of payments_df:", payments_df.head())
 
         # Determine the appropriate 'pledge_date' column
         if 'pledge_created_at' in pledges_df.columns:
@@ -30,8 +28,11 @@ def load_and_preprocess_data(pledges_path, payments_path):
         # Rename the selected column to 'pledge_date'
         pledges_df.rename(columns={pledge_date_column: 'pledge_date'}, inplace=True)
 
+        # **Create 'year' column here**
+        pledges_df['year'] = pledges_df['pledge_date'].dt.year
+
         # Validate columns
-        required_columns = ['pledge_id', 'pledge_date', 'contribution_amount'] #use 'contribution_amount'
+        required_columns = ['pledge_id', 'pledge_date', 'contribution_amount', 'year']  # Added 'year'
         for col in required_columns:
             if col not in pledges_df.columns:
                 raise ValueError(f"Missing column in pledges dataset: {col}")
@@ -68,6 +69,14 @@ def load_and_preprocess_data(pledges_path, payments_path):
             suffixes=('_pledge', '_payment')
         )
 
+        # **Print the columns of the merged DataFrame**
+        print("Combined DataFrame Columns:", combined_df.columns)  # ADDED
+
+        if 'amount' not in combined_df.columns:  # Changed to 'amount'
+            raise ValueError("Could not find 'amount' column after merge. Check merge operation.")
+
+
+        combined_df.payment_amount_column = 'amount' #changed to 'amount'
         return combined_df
 
     except Exception as e:
@@ -76,14 +85,6 @@ def load_and_preprocess_data(pledges_path, payments_path):
 
 
 def create_visualizations(df):
-    """Creates various visualizations using Plotly.
-
-    Args:
-        df (pandas.DataFrame): Combined DataFrame of pledges and payments.
-
-    Returns:
-        dict: A dictionary containing Plotly figures.
-    """
     figures = {}
 
     # 1. Pledge Trend Over Time
@@ -101,17 +102,17 @@ def create_visualizations(df):
     # Group by month and calculate pledge and payment sums
     monthly_data = df.groupby(df['pledge_date'].dt.to_period('M')).agg({
         'contribution_amount': 'sum',
-        'amount': 'sum'
+        'amount': 'sum' #Changed to 'amount'
     }).reset_index()
     monthly_data['pledge_date'] = monthly_data['pledge_date'].dt.to_timestamp()
-    monthly_data['fulfillment_rate'] = (monthly_data['amount'] / monthly_data['contribution_amount']) * 100
+    monthly_data['fulfillment_rate'] = (monthly_data['amount'] / monthly_data['contribution_amount']) * 100 #Changed to 'amount'
 
     fig_fulfillment_rate = px.line(monthly_data, x='pledge_date', y='fulfillment_rate',
                                  title='Pledge Fulfillment Rate Over Time')
     figures['fulfillment_rate'] = fig_fulfillment_rate
 
     # 4. Pledge vs. Payment Scatter Plot
-    fig_pledge_payment_scatter = px.scatter(df, x='contribution_amount', y='amount',
+    fig_pledge_payment_scatter = px.scatter(df, x='contribution_amount', y='amount', #Changed to 'amount'
                                            title='Pledge Amount vs. Payment Amount',
                                            hover_data=['pledge_id'])  # add pledge_id to the hover data
     figures['pledge_payment_scatter'] = fig_pledge_payment_scatter
