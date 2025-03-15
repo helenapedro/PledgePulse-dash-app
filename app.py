@@ -1,9 +1,9 @@
-# app.py
 import dash
 from dash import dcc, html
 from dash.dependencies import Input, Output
-import plotly.graph_objects as go  # Import here
+import plotly.graph_objects as go  
 import plotly.express as px
+import dash_ag_grid as dag  
 
 from data_processing import load_and_preprocess_data, create_visualizations
 
@@ -62,16 +62,12 @@ app.layout = html.Div([
     # Table (Example - Pledge Summary)
     html.Div([
         html.H2("Pledge Summary Table"),
-        dash.dash_table.DataTable(
-            id='pledge-summary-table',
-            columns=[{"name": i, "id": i} for i in ['year', 'total_pledge_amount', 'average_pledge_amount']],
-            data=[],
-            style_cell={'textAlign': 'left'},
-            style_header={
-                'backgroundColor': 'rgb(230, 230, 230)',
-                'fontWeight': 'bold'
-            }
-        )
+        dag.AgGrid(  # Replace dash_table with dash_ag_grid
+            id='pledge-summary-grid',
+            columnDefs=[{"headerName": i, "field": i} for i in ['year', 'total_contribution_amount', 'average_contribution_amount']],
+            rowData=[],
+            columnSize="sizeToFit",  # Adjust column size
+        ),
     ]),
 
     # LLM Interface (Placeholder)
@@ -93,7 +89,7 @@ app.layout = html.Div([
      Output('fulfillment-rate-graph', 'figure'),
      Output('pledge-payment-scatter-graph', 'figure'),
      Output('pledges-by-year-graph', 'figure'),
-     Output('pledge-summary-table', 'data')], # Update all graphs and the table
+     Output('pledge-summary-grid', 'rowData')],  # Update the AgGrid's rowData
     [Input('year-dropdown', 'value')]
 )
 def update_graphs(selected_years):
@@ -106,8 +102,8 @@ def update_graphs(selected_years):
     filtered_figures = create_visualizations(filtered_df)
 
     # Create pledge summary data for the table
-    pledge_summary = filtered_df.groupby('year')['contribution_amount'].agg(['sum', 'mean']).reset_index() #Changed here
-    pledge_summary.columns = ['year', 'total_pledge_amount', 'average_pledge_amount']
+    pledge_summary = filtered_df.groupby('year')['contribution_amount'].agg(['sum', 'mean']).reset_index()  # Changed here
+    pledge_summary.columns = ['year', 'total_contribution_amount', 'average_contribution_amount']
     table_data = pledge_summary.to_dict('records')
 
 
@@ -116,7 +112,7 @@ def update_graphs(selected_years):
            filtered_figures['fulfillment_rate'], \
            filtered_figures['pledge_payment_scatter'], \
            filtered_figures['by_year'], \
-           table_data
+           table_data  # Return the table data
 
 
 # LLM Callback (Placeholder - To be implemented with an actual LLM)
